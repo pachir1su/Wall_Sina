@@ -20,9 +20,9 @@ void loop() {
     digitalWrite(led, LOW);  // LED 끄기
     delay(250);              // 250밀리초 대기
 
-    // 부저 울리기 (0.5초마다 한 번씩)
+    // 부저 울리기
     tone(buzzer, 1000); // 부저에 1000Hz 소리 내기
-    delay(500);         // 500밀리초 대기
+    delay(1250);         // 1250밀리초 대기
     noTone(buzzer);     // 부저 소리 끄기
     delay(500);         // 500밀리초 대기
   } else {
