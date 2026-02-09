@@ -59,7 +59,7 @@ void loop() {
 
     unsigned long elapsedTime = currentTime - signalStartTime;
 
-    if (elapsedTime < 20000) { // 초록불 상태 (0 ~ 20초)
+    if (elapsedTime < 27000) { // 초록불 상태 (0 ~ 27초)
       digitalWrite(greenLED, HIGH);
       digitalWrite(yellowLED, LOW);
       digitalWrite(redLED, LOW);
@@ -73,9 +73,9 @@ void loop() {
         ledToggleTime = currentTime;
       }
 
-      display.showNumberDec(20 - elapsedTime / 1000, true); // 카운트다운 표시
+      display.showNumberDec(27 - elapsedTime / 1000, true); // 카운트다운 표시
 
-    } else if (elapsedTime < 30000) { // 노란불 상태 (20 ~ 30초)
+    } else if (elapsedTime < 47000) { // 노란불 상태 (27 ~ 47초)
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, HIGH);
       digitalWrite(redLED, LOW);
@@ -88,9 +88,9 @@ void loop() {
         ledToggleTime = currentTime;
       }
 
-      display.showNumberDec(30 - elapsedTime / 1000, true); // 카운트다운 표시
+      display.showNumberDec(47 - elapsedTime / 1000, true); // 카운트다운 표시
 
-    } else if (elapsedTime < 45000) { // 노란불 점멸 상태 (30 ~ 45초)
+    } else if (elapsedTime < 70000) { // 노란불 점멸 상태 (47 ~ 70초)
       digitalWrite(greenLED, LOW);
       digitalWrite(redLED, LOW);
       noTone(buzzer); // 부저 끄기
@@ -102,9 +102,9 @@ void loop() {
         ledToggleTime = currentTime;
       }
       digitalWrite(led2, LOW); // 파란색 LED 꺼짐
-      display.showNumberDec(45 - elapsedTime / 1000, true); // 카운트다운 표시
+      display.showNumberDec(70 - elapsedTime / 1000, true); // 카운트다운 표시
 
-    } else if (elapsedTime < 60000) { // 빨간불과 노란불 점멸 상태 (45 ~ 60초)
+    } else if (elapsedTime < 90000) { // 빨간불과 노란불 점멸 상태 (70 ~ 90초)
       digitalWrite(greenLED, LOW);
       noTone(buzzer); // 부저 끄기
 
@@ -117,9 +117,9 @@ void loop() {
 
       digitalWrite(led1, HIGH); // 빨간색 LED 빠르게 깜빡임
       digitalWrite(led2, LOW); // 파란색 LED 꺼짐
-      display.showNumberDec(60 - elapsedTime / 1000, true); // 카운트다운 표시
+      display.showNumberDec(90 - elapsedTime / 1000, true); // 카운트다운 표시
 
-    } else { // 빨간불 상태 (60초 이상)
+    } else { // 빨간불 상태 (90초 이상)
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, LOW);
       digitalWrite(redLED, HIGH);
