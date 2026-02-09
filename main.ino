@@ -28,15 +28,17 @@ void loop() {
     // 부저 울리기
     tone(buzzer, 1000); // 부저에 1000Hz 소리 내기
 
-    // LED 교차 깜빡이기와 모터 회전
+    // LED와 모터 동시에 작동
     for (int i = 0; i < 5; i++) { // 부저가 울리는 동안 LED를 5번 교차 깜빡이기
       digitalWrite(led1, HIGH); // 첫 번째 LED 켜기
       digitalWrite(led2, LOW);  // 두 번째 LED 끄기
-      myStepper.step(stepsPerRevolution);  // 시계방향으로 한 바퀴 회전
+      myStepper.step(stepsPerRevolution / 4); // 모터 일정 스텝 회전
       delay(200);               // 200밀리초 대기
 
       digitalWrite(led1, LOW);  // 첫 번째 LED 끄기
       digitalWrite(led2, HIGH); // 두 번째 LED 켜기
+      
+      myStepper.step(stepsPerRevolution / 4); // 모터 일정 스텝 회전
       delay(200);               // 200밀리초 대기
     }
 
