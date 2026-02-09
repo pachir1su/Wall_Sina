@@ -28,6 +28,8 @@ unsigned long signalStartTime = 0;  // 신호등 타이머 변수
 bool signalActive = false;          // 신호등 활성화 상태
 unsigned long blueLEDStartTime = 0; // 파란색 LED 타이머 변수
 bool blueLEDState = false;          // 파란색 LED 상태
+unsigned long lastDisplayUpdate = 0; // 마지막 디스플레이 업데이트 시간
+const unsigned long displayUpdateInterval = 100; // 디스플레이 업데이트 간격
 
 void setup() {
   pinMode(led1, OUTPUT);   // 빨간색 LED 핀 출력으로 설정
@@ -62,21 +64,21 @@ void loop() {
     unsigned long currentTime = millis() - signalStartTime;
     int displayTime = 0; // 디스플레이에 표시할 시간 변수
 
-    if (currentTime < 5000) { // 0 ~ 5초: 초록불
+    if (currentTime < 20000) { // 0 ~ 20초: 초록불
       digitalWrite(greenLED, HIGH);
       digitalWrite(yellowLED, LOW);
       digitalWrite(redLED, LOW);
       digitalWrite(led2, LOW); // 파란색 LED 끄기
       tone(buzzer, 1000); // 부저 작동
-      displayTime = (5000 - currentTime) / 1000; // 남은 시간 초 단위
-    } else if (currentTime < 10000) { // 5 ~ 10초: 노란불
+      displayTime = (20000 - currentTime) / 1000; // 남은 시간 초 단위
+    } else if (currentTime < 30000) { // 20 ~ 30초: 노란불
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, HIGH);
       digitalWrite(redLED, LOW);
       digitalWrite(led2, LOW); // 파란색 LED 끄기
       tone(buzzer, 1000); // 부저 작동
-      displayTime = (10000 - currentTime) / 1000; // 남은 시간 초 단위
-    } else if (currentTime < 15000) { // 10 ~ 15초: 노란불 깜빡임
+      displayTime = (30000 - currentTime) / 1000; // 남은 시간 초 단위
+    } else if (currentTime < 45000) { // 30 ~ 45초: 노란불 깜빡임
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, HIGH);
       digitalWrite(redLED, LOW);
@@ -85,8 +87,8 @@ void loop() {
       delay(300);
       digitalWrite(yellowLED, LOW);
       delay(300);
-      displayTime = (15000 - currentTime) / 1000; // 남은 시간 초 단위
-    } else if (currentTime < 20000) { // 15 ~ 20초: 빨간불과 노란불 깜빡임
+      displayTime = (45000 - currentTime) / 1000; // 남은 시간 초 단위
+    } else if (currentTime < 60000) { // 45 ~ 60초: 빨간불과 노란불 깜빡임
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, HIGH);
       digitalWrite(redLED, HIGH);
@@ -96,8 +98,8 @@ void loop() {
       digitalWrite(yellowLED, LOW);
       digitalWrite(redLED, LOW);
       delay(250);
-      displayTime = (20000 - currentTime) / 1000; // 남은 시간 초 단위
-    } else { // 20초 이상: 빨간불과 파란색 LED 깜빡임
+      displayTime = (60000 - currentTime) / 1000; // 남은 시간 초 단위
+    } else { // 60초 이상: 빨간불과 파란색 LED 깜빡임
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, LOW);
       digitalWrite(redLED, HIGH);
@@ -117,7 +119,7 @@ void loop() {
     }
 
     // 모터와 LED 작동 (부저가 작동하지 않을 때)
-    if (currentTime < 20000) {
+    if (currentTime < 60000) {
       // 신호등이 빨간불이 아닐 때만 LED를 깜빡임
       digitalWrite(led1, HIGH); // 빨간색 LED 켜기
       digitalWrite(led2, LOW);  // 파란색 LED 끄기
@@ -135,8 +137,13 @@ void loop() {
       digitalWrite(led2, LOW);
     }
 
-    // TM1637 디스플레이에 시간 표시
-    display.showNumberDec(displayTime, false); // 남은 시간 초 단위 표시
+    // TM1637 디스플레이에 시간 표시 (업데이트 간격 고려)
+    unsigned long currentMillis = millis();
+    if (currentMillis - lastDisplayUpdate >= displayUpdateInterval) {
+      display.showNumberDec(displayTime, false); // 남은 시간 초 단위 표시
+      lastDisplayUpdate = currentMillis; // 마지막 업데이트 시간 기록
+    }
+
   } else {
     // 물이 감지되지 않으면 신호등과 모터 작동 중지
     if (signalActive) {
@@ -147,14 +154,11 @@ void loop() {
       digitalWrite(redLED, LOW);
       digitalWrite(led2, LOW); // 파란색 LED 끄기
     }
-
+    // LED와 부저 상태 초기화
     digitalWrite(led1, LOW); // 빨간색 LED 끄기
-    noTone(buzzer);
+    noTone(buzzer);          // 부저 끄기
     // 모터를 멈추게 할 필요는 없습니다. 스텝을 명령하지 않으면 모터는 자동으로 멈춥니다.
-
-    // TM1637 디스플레이에 0 표시
-    display.showNumberDec(0, false); // 0 표시
+    // TM1637 디스플레이에 0000 표시
+    display.showNumberDec(0, false);
   }
-
-  Serial.println(data); // 센서 값 출력 (디버깅용)
 }
