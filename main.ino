@@ -33,11 +33,11 @@ void loop() {
       digitalWrite(led1, HIGH); // 첫 번째 LED 켜기
       digitalWrite(led2, LOW);  // 두 번째 LED 끄기
       myStepper.step(stepsPerRevolution / 2048); // 모터 한 스텝 회전
+      myStepper.step(stepsPerRevolution);  // 시계방향으로 한 바퀴 회전
       delay(200);               // 200밀리초 대기
 
       digitalWrite(led1, LOW);  // 첫 번째 LED 끄기
       digitalWrite(led2, HIGH); // 두 번째 LED 켜기
-      myStepper.step(-stepsPerRevolution / 2048); // 모터 반대 방향으로 한 스텝 회전
       delay(200);               // 200밀리초 대기
     }
 
@@ -47,11 +47,6 @@ void loop() {
     digitalWrite(led1, LOW);
     digitalWrite(led2, LOW);
     delay(1250);    // 1.25초 대기
-
-    // 모터를 더 회전시킬 수 있습니다. 예를 들어, 전체 회전 시키기:
-    myStepper.step(stepsPerRevolution);  // 시계방향으로 한 바퀴 회전
-    delay(1000);  // 1초 대기
-    myStepper.step(-stepsPerRevolution);  // 반시계방향으로 한 바퀴 회전
   } else {
     // 물이 감지되지 않으면 LED, 부저, 모터 끄기
     digitalWrite(led1, LOW);
