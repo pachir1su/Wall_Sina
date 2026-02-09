@@ -1,5 +1,5 @@
 #include <Stepper.h>
-#include <TM1637Display.h>  // TM1637 라이브러리 추가
+#include <TM1637Display.h>
 
 const int stepsPerRevolution = 2048;  // 28BYJ-48 모터의 전체 스텝 수
 
@@ -8,7 +8,7 @@ int sensor = A0;    // 물 감지 센서
 int led1 = 11;      // 빨간색 LED 핀 번호
 int led2 = 10;      // 파란색 LED 핀 번호
 int buzzer = 12;    // 부저 핀 번호
-int laser = 9;      // 레이저 핀 번호
+int laserPin = 9;   // 레이저 핀 번호
 int threshold = 500; // 물 감지 기준값
 
 // 신호등 LED 핀
@@ -16,161 +16,139 @@ int greenLED = A3;   // 초록색 LED
 int yellowLED = A4;  // 노란색 LED
 int redLED = A5;     // 빨간색 LED
 
+// TM1637 핀 설정
+#define CLK 2
+#define DIO 3
+TM1637Display display(CLK, DIO);
+
 // ULN2003 드라이버와 연결된 아두이노 핀 번호 설정 (4, 5, 6, 7 사용)
 Stepper myStepper(stepsPerRevolution, 4, 6, 5, 7);
 
-// TM1637 디스플레이 핀 설정
-const int CLK = 2;   // 클록 핀
-const int DIO = 3;   // 데이터 핀
-TM1637Display display(CLK, DIO); // 디스플레이 객체 생성
-
 unsigned long signalStartTime = 0;  // 신호등 타이머 변수
 bool signalActive = false;          // 신호등 활성화 상태
-unsigned long blueLEDStartTime = 0; // 파란색 LED 타이머 변수
-bool blueLEDState = false;          // 파란색 LED 상태
-unsigned long lastDisplayUpdate = 0; // 마지막 디스플레이 업데이트 시간
-const unsigned long displayUpdateInterval = 100; // 디스플레이 업데이트 간격
-
-// 상태 변수
-unsigned long lastLEDChange = 0;  // 마지막 LED 상태 변경 시간
-unsigned long lastYellowBlink = 0; // 마지막 노란불 깜빡임 시간
-unsigned long lastRedBlink = 0;    // 마지막 빨간불 깜빡임 시간
-const unsigned long ledBlinkInterval = 500; // LED 깜빡임 간격
-const unsigned long yellowBlinkInterval = 600; // 노란불 깜빡임 간격
-const unsigned long redBlinkInterval = 500; // 빨간불 깜빡임 간격
+unsigned long ledToggleTime = 0;    // LED 교차 깜빡임 타이머
+bool ledState = false;              // LED 상태 토글 변수
 
 void setup() {
   pinMode(led1, OUTPUT);   // 빨간색 LED 핀 출력으로 설정
   pinMode(led2, OUTPUT);   // 파란색 LED 핀 출력으로 설정
   pinMode(buzzer, OUTPUT); // 부저 핀 출력으로 설정
-  pinMode(laser, OUTPUT);  // 레이저 핀 출력으로 설정
+  pinMode(laserPin, OUTPUT); // 레이저 핀 출력으로 설정
   pinMode(greenLED, OUTPUT); // 초록색 LED 핀 출력으로 설정
   pinMode(yellowLED, OUTPUT); // 노란색 LED 핀 출력으로 설정
   pinMode(redLED, OUTPUT); // 빨간색 LED 핀 출력으로 설정
 
-  digitalWrite(laser, HIGH); // 레이저 항상 켜기
-
   myStepper.setSpeed(15);  // 모터 속도 설정 (RPM)
+  display.setBrightness(0x0f); // TM1637 최대 밝기 설정
   Serial.begin(9600);      // 시리얼 모니터 시작 (디버깅용)
 
-  display.setBrightness(0x0f); // 최대 밝기 설정
-  display.clear();            // 디스플레이 초기화
+  // 레이저 상시 켜기
+  digitalWrite(laserPin, HIGH);
 }
 
 void loop() {
   int data = analogRead(sensor); // 센서 값 읽기
+  unsigned long currentTime = millis();
 
   if (data > threshold) {
     // 물이 감지되었으므로 신호등과 모터 작동 시작
     if (!signalActive) {
       signalActive = true;  // 신호등 활성화 상태로 변경
-      signalStartTime = millis(); // 신호등 시작 시간 기록
-      blueLEDStartTime = millis(); // 파란색 LED 시작 시간 초기화
+      signalStartTime = currentTime; // 신호등 시작 시간 기록
     }
 
-    // 신호등 상태 제어
-    unsigned long currentTime = millis() - signalStartTime;
-    int displayTime = 0; // 디스플레이에 표시할 시간 변수
+    unsigned long elapsedTime = currentTime - signalStartTime;
 
-    if (currentTime < 20000) { // 0 ~ 20초: 초록불
+    if (elapsedTime < 20000) { // 초록불 상태 (0 ~ 20초)
       digitalWrite(greenLED, HIGH);
       digitalWrite(yellowLED, LOW);
       digitalWrite(redLED, LOW);
       tone(buzzer, 1000); // 부저 작동
-      myStepper.step(stepsPerRevolution / 32); // 모터 정방향으로 작동
-      
-      // 빨간색 LED와 파란색 LED 교차 깜빡임
-      unsigned long currentMillis = millis();
-      if (currentMillis - lastLEDChange >= ledBlinkInterval) {
-        lastLEDChange = currentMillis;
-        digitalWrite(led1, !digitalRead(led1));
-        digitalWrite(led2, !digitalRead(led2));
+      myStepper.step(stepsPerRevolution / 32); // 모터 정방향 회전
+
+      if (currentTime - ledToggleTime >= 500) {
+        ledState = !ledState;
+        digitalWrite(led1, ledState);
+        digitalWrite(led2, !ledState);
+        ledToggleTime = currentTime;
       }
 
-      displayTime = (20000 - currentTime) / 1000; // 남은 시간 초 단위
+      display.showNumberDec(20 - elapsedTime / 1000, true); // 카운트다운 표시
 
-    } else if (currentTime < 30000) { // 20 ~ 30초: 노란불
+    } else if (elapsedTime < 30000) { // 노란불 상태 (20 ~ 30초)
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, HIGH);
       digitalWrite(redLED, LOW);
-      noTone(buzzer); // 부저 끄기
-      // 빨간색 LED와 파란색 LED 교차 깜빡임
-      unsigned long currentMillis = millis();
-      if (currentMillis - lastLEDChange >= ledBlinkInterval) {
-        lastLEDChange = currentMillis;
-        digitalWrite(led1, !digitalRead(led1));
-        digitalWrite(led2, !digitalRead(led2));
-      }
-      myStepper.step(0); // 모터 정지
-      displayTime = (30000 - currentTime) / 1000; // 남은 시간 초 단위
+      tone(buzzer, 1000); // 부저 작동
 
-    } else if (currentTime < 45000) { // 30 ~ 45초: 노란불 깜빡임
+      if (currentTime - ledToggleTime >= 500) {
+        ledState = !ledState;
+        digitalWrite(led1, ledState);
+        digitalWrite(led2, !ledState);
+        ledToggleTime = currentTime;
+      }
+
+      display.showNumberDec(30 - elapsedTime / 1000, true); // 카운트다운 표시
+
+    } else if (elapsedTime < 45000) { // 노란불 점멸 상태 (30 ~ 45초)
       digitalWrite(greenLED, LOW);
-      digitalWrite(yellowLED, HIGH);
       digitalWrite(redLED, LOW);
       noTone(buzzer); // 부저 끄기
-      // 노란색 LED 깜빡임
-      unsigned long currentMillis = millis();
-      if (currentMillis - lastYellowBlink >= yellowBlinkInterval) {
-        lastYellowBlink = currentMillis;
-        digitalWrite(yellowLED, !digitalRead(yellowLED));
-      }
-      displayTime = (45000 - currentTime) / 1000; // 남은 시간 초 단위
 
-    } else if (currentTime < 60000) { // 45 ~ 60초: 빨간불과 노란불 깜빡임
+      if (currentTime - ledToggleTime >= 600) {
+        ledState = !ledState;
+        digitalWrite(yellowLED, ledState);
+        digitalWrite(led1, ledState); // 빨간색 LED 천천히 깜빡임
+        ledToggleTime = currentTime;
+      }
+      digitalWrite(led2, LOW); // 파란색 LED 꺼짐
+      display.showNumberDec(45 - elapsedTime / 1000, true); // 카운트다운 표시
+
+    } else if (elapsedTime < 60000) { // 빨간불과 노란불 점멸 상태 (45 ~ 60초)
       digitalWrite(greenLED, LOW);
-      digitalWrite(yellowLED, HIGH);
-      digitalWrite(redLED, HIGH);
       noTone(buzzer); // 부저 끄기
-      // 빨간색 LED 빠르게 깜빡임
-      unsigned long currentMillis = millis();
-      if (currentMillis - lastRedBlink >= redBlinkInterval) {
-        lastRedBlink = currentMillis;
-        digitalWrite(redLED, !digitalRead(redLED));
-      }
-      displayTime = (60000 - currentTime) / 1000; // 남은 시간 초 단위
 
-    } else { // 60초 이상: 빨간불과 파란색 LED 깜빡임
+      if (currentTime - ledToggleTime >= 500) {
+        ledState = !ledState;
+        digitalWrite(redLED, ledState);
+        digitalWrite(yellowLED, ledState);
+        ledToggleTime = currentTime;
+      }
+
+      digitalWrite(led1, HIGH); // 빨간색 LED 빠르게 깜빡임
+      digitalWrite(led2, LOW); // 파란색 LED 꺼짐
+      display.showNumberDec(60 - elapsedTime / 1000, true); // 카운트다운 표시
+
+    } else { // 빨간불 상태 (60초 이상)
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, LOW);
       digitalWrite(redLED, HIGH);
+      noTone(buzzer); // 부저 끄기
+      myStepper.step(-stepsPerRevolution / 32); // 모터 역방향 회전
 
-      // 파란색 LED 깜빡이기
-      unsigned long blueLEDCurrentTime = millis() - blueLEDStartTime;
-      if (blueLEDCurrentTime >= 500) {
-        blueLEDState = !blueLEDState;
-        digitalWrite(led2, blueLEDState ? HIGH : LOW);
-        blueLEDStartTime = millis(); // 타이머 재설정
+      if (currentTime - ledToggleTime >= 500) {
+        ledState = !ledState;
+        digitalWrite(led2, ledState); // 파란색 LED 깜빡임
+        ledToggleTime = currentTime;
       }
 
-      // 모터를 역방향으로 회전
-      myStepper.step(-stepsPerRevolution / 32);
-      noTone(buzzer); // 부저 끄기
-      displayTime = 0; // 디스플레이에 0 표시
-    }
-
-    // TM1637 디스플레이에 시간 표시 (업데이트 간격 고려)
-    unsigned long currentMillis = millis();
-    if (currentMillis - lastDisplayUpdate >= displayUpdateInterval) {
-      display.showNumberDec(displayTime, false); // 남은 시간 초 단위 표시
-      lastDisplayUpdate = currentMillis; // 마지막 업데이트 시간 기록
+      digitalWrite(led1, LOW); // 빨간색 LED 꺼짐
+      display.showNumberDec(elapsedTime / 1000, true); // 카운트업 표시
     }
 
   } else {
     // 물이 감지되지 않으면 신호등과 모터 작동 중지
     if (signalActive) {
-      // 신호등 비활성화 상태로 변경
-      signalActive = false;
+      signalActive = false; // 신호등 비활성화 상태로 변경
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, LOW);
       digitalWrite(redLED, LOW);
+      digitalWrite(led1, LOW); // 빨간색 LED 끄기
       digitalWrite(led2, LOW); // 파란색 LED 끄기
+      noTone(buzzer);
+      display.clear();
     }
-    // LED와 부저 상태 초기화
-    digitalWrite(led1, LOW); // 빨간색 LED 끄기
-    noTone(buzzer);          // 부저 끄기
-    // 모터를 멈추게 할 필요는 없습니다. 스텝을 명령하지 않으면 모터는 자동으로 멈춥니다.
-    // TM1637 디스플레이에 0000 표시
-    display.showNumberDec(0, false);
   }
+
+  Serial.println(data); // 센서 값 출력 (디버깅용)
 }
