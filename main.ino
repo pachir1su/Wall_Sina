@@ -28,6 +28,7 @@ unsigned long signalStartTime = 0;  // 신호등 타이머 변수
 bool signalActive = false;          // 신호등 활성화 상태
 unsigned long ledToggleTime = 0;    // LED 교차 깜빡임 타이머
 bool ledState = false;              // LED 상태 토글 변수
+int ledTogglePhase = 0;             // 신호등 3색 교차 깜빡임 상태
 
 void setup() {
   pinMode(led1, OUTPUT);   // 빨간색 LED 핀 출력으로 설정
@@ -119,7 +120,7 @@ void loop() {
       digitalWrite(led2, LOW); // 파란색 LED 꺼짐
       display.showNumberDec(90 - elapsedTime / 1000, true); // 카운트다운 표시
 
-    } else { // 빨간불 상태 (90초 이상)
+    } else if (elapsedTime < 110000) { // 빨간불 상태 (90 ~ 110초)
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, LOW);
       digitalWrite(redLED, HIGH);
@@ -133,6 +134,32 @@ void loop() {
       }
 
       digitalWrite(led1, LOW); // 빨간색 LED 꺼짐
+      display.showNumberDec(elapsedTime / 1000, true); // 카운트업 표시
+
+    } else { // 110초 이상 - 신호등 3개의 LED 교차 깜빡임
+      noTone(buzzer); // 부저 끄기
+      myStepper.step(-stepsPerRevolution / 32); // 모터 역방향 회전
+
+      if (currentTime - ledToggleTime >= 500) {
+        ledTogglePhase = (ledTogglePhase + 1) % 3;
+        if (ledTogglePhase == 0) {
+          digitalWrite(redLED, HIGH);
+          digitalWrite(yellowLED, LOW);
+          digitalWrite(greenLED, LOW);
+        } else if (ledTogglePhase == 1) {
+          digitalWrite(redLED, LOW);
+          digitalWrite(yellowLED, HIGH);
+          digitalWrite(greenLED, LOW);
+        } else {
+          digitalWrite(redLED, LOW);
+          digitalWrite(yellowLED, LOW);
+          digitalWrite(greenLED, HIGH);
+        }
+        ledToggleTime = currentTime;
+      }
+
+      digitalWrite(led1, LOW); // 빨간색 LED 꺼짐
+      digitalWrite(led2, LOW); // 파란색 LED 꺼짐
       display.showNumberDec(elapsedTime / 1000, true); // 카운트업 표시
     }
 
