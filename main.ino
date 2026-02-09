@@ -44,6 +44,7 @@ void loop() {
     while (data > threshold) { // 물이 감지되는 동안
       currentTime = millis() - startTime;
 
+      // 신호등 상태 제어
       if (currentTime < 5000) { // 0 ~ 5초: 초록불
         digitalWrite(greenLED, HIGH);
         digitalWrite(yellowLED, LOW);
@@ -56,9 +57,9 @@ void loop() {
         digitalWrite(greenLED, LOW);
         digitalWrite(yellowLED, HIGH);
         digitalWrite(redLED, LOW);
-        delay(500);
+        delay(250);
         digitalWrite(yellowLED, LOW);
-        delay(500);
+        delay(250);
       } else if (currentTime < 20000) { // 15 ~ 20초: 빨간불과 노란불 깜빡임
         digitalWrite(greenLED, LOW);
         digitalWrite(yellowLED, HIGH);
@@ -73,20 +74,19 @@ void loop() {
         digitalWrite(redLED, HIGH);
       }
 
-    // LED와 모터 동시에 작동
-    for (int i = 0; i < 10; i++) { // 부저가 울리는 동안 LED를 10번 교차 깜빡이기
-      digitalWrite(led1, HIGH); // 첫 번째 LED 켜기
-      digitalWrite(led2, LOW);  // 두 번째 LED 끄기
-      myStepper.step(stepsPerRevolution / 32); // 모터 일정 스텝 회전
-      delay(50);               // 50밀리초 대기
+      // 모터와 LED 작동
+      for (int i = 0; i < 10; i++) { // 부저가 울리는 동안 LED를 10번 교차 깜빡이기
+        digitalWrite(led1, HIGH); // 첫 번째 LED 켜기
+        digitalWrite(led2, LOW);  // 두 번째 LED 끄기
+        myStepper.step(stepsPerRevolution / 32); // 모터 일정 스텝 회전
+        delay(50);               // 50밀리초 대기
 
-      digitalWrite(led1, LOW);  // 첫 번째 LED 끄기
-      digitalWrite(led2, HIGH); // 두 번째 LED 켜기
-      
-      myStepper.step(stepsPerRevolution / 32); // 모터 일정 스텝 회전
-      delay(50);               // 50밀리초 대기
-
-    }
+        digitalWrite(led1, LOW);  // 첫 번째 LED 끄기
+        digitalWrite(led2, HIGH); // 두 번째 LED 켜기
+        
+        myStepper.step(stepsPerRevolution / 32); // 모터 일정 스텝 회전
+        delay(50);               // 50밀리초 대기
+      }
 
       // 센서 값 다시 읽기
       data = analogRead(sensor); // 센서 값 읽기
