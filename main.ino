@@ -16,7 +16,7 @@ void setup() {
   pinMode(led1, OUTPUT);   // 첫 번째 LED 핀 출력으로 설정
   pinMode(led2, OUTPUT);   // 두 번째 LED 핀 출력으로 설정
   pinMode(buzzer, OUTPUT); // 부저 핀 출력으로 설정
-  myStepper.setSpeed(10);  // 모터 속도 설정 (RPM)
+  myStepper.setSpeed(15);  // 모터 속도 설정 (RPM)
   Serial.begin(9600);      // 시리얼 모니터 시작 (디버깅용)
 }
 
