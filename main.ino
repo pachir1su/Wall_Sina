@@ -10,9 +10,9 @@ int buzzer = 12;    // 부저 핀 번호
 int threshold = 500; // 물 감지 기준값
 
 // 신호등 LED 핀
-int greenLED = 3;   // 초록색 LED
-int yellowLED = 2;  // 노란색 LED
-int redLED = 1;     // 빨간색 LED
+int greenLED = A3;   // 초록색 LED
+int yellowLED = A4;  // 노란색 LED
+int redLED = A5;     // 빨간색 LED
 
 // ULN2003 드라이버와 연결된 아두이노 핀 번호 설정 (4, 5, 6, 7 사용)
 Stepper myStepper(stepsPerRevolution, 4, 6, 5, 7);
@@ -66,7 +66,7 @@ void loop() {
       delay(300);
       digitalWrite(yellowLED, LOW);
       digitalWrite(redLED, LOW);
-      delay(300);
+      delay(250);
     } else { // 20초 이상: 빨간불
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, LOW);
