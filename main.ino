@@ -29,7 +29,7 @@ bool signalActive = false;          // 신호등 활성화 상태
 unsigned long blueLEDStartTime = 0; // 파란색 LED 타이머 변수
 bool blueLEDState = false;          // 파란색 LED 상태
 unsigned long lastDisplayUpdate = 0; // 마지막 디스플레이 업데이트 시간
-const unsigned long displayUpdateInterval = 500; // 디스플레이 업데이트 간격 (0.5초)
+const unsigned long displayUpdateInterval = 10; // 디스플레이 업데이트 간격 (0.0초)
 
 // 카운트다운 표시를 위한 상태 변수
 bool countdownActive = false;
@@ -68,21 +68,21 @@ void loop() {
     unsigned long currentTime = millis() - signalStartTime;
     int displayTime = 0; // 디스플레이에 표시할 시간 변수
 
-    if (currentTime < 20000) { // 0 ~ 20초: 초록불
+    if (currentTime < 3000) { // 0 ~ 3초: 초록불
       digitalWrite(greenLED, HIGH);
       digitalWrite(yellowLED, LOW);
       digitalWrite(redLED, LOW);
       digitalWrite(led2, LOW); // 파란색 LED 끄기
       tone(buzzer, 1000); // 부저 작동
       displayTime = (20000 - currentTime) / 1000; // 남은 시간 초 단위
-    } else if (currentTime < 30000) { // 20 ~ 30초: 노란불
+    } else if (currentTime < 7000) { // 3 ~ 7초: 노란불
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, HIGH);
       digitalWrite(redLED, LOW);
       digitalWrite(led2, LOW); // 파란색 LED 끄기
       tone(buzzer, 1000); // 부저 작동
       displayTime = (30000 - currentTime) / 1000; // 남은 시간 초 단위
-    } else if (currentTime < 45000) { // 30 ~ 45초: 노란불 깜빡임
+    } else if (currentTime < 10000) { // 7 ~ 10초: 노란불 깜빡임
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, HIGH);
       digitalWrite(redLED, LOW);
@@ -92,7 +92,7 @@ void loop() {
       digitalWrite(yellowLED, LOW);
       delay(300);
       displayTime = (45000 - currentTime) / 1000; // 남은 시간 초 단위
-    } else if (currentTime < 60000) { // 45 ~ 60초: 빨간불과 노란불 깜빡임
+    } else if (currentTime < 15000) { // 10 ~ 15초: 빨간불과 노란불 깜빡임
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, HIGH);
       digitalWrite(redLED, HIGH);
@@ -103,7 +103,7 @@ void loop() {
       digitalWrite(redLED, LOW);
       delay(250);
       displayTime = (60000 - currentTime) / 1000; // 남은 시간 초 단위
-    } else { // 60초 이상: 빨간불과 파란색 LED 깜빡임
+    } else { // 15초 이상: 빨간불과 파란색 LED 깜빡임
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, LOW);
       digitalWrite(redLED, HIGH);
