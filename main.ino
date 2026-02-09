@@ -136,9 +136,8 @@ void loop() {
       digitalWrite(led1, LOW); // 빨간색 LED 꺼짐
       display.showNumberDec(elapsedTime / 1000, true); // 카운트업 표시
 
-    } else { // 110초 이상 - 신호등 3개의 LED 교차 깜빡임
+    } else { // 110초 이상 - 신호등 3개의 LED 교차 깜빡임, 모터 정지
       noTone(buzzer); // 부저 끄기
-      myStepper.step(-stepsPerRevolution / 32); // 모터 역방향 회전
 
       if (currentTime - ledToggleTime >= 500) {
         ledTogglePhase = (ledTogglePhase + 1) % 3;
@@ -161,6 +160,7 @@ void loop() {
       digitalWrite(led1, LOW); // 빨간색 LED 꺼짐
       digitalWrite(led2, LOW); // 파란색 LED 꺼짐
       display.showNumberDec(elapsedTime / 1000, true); // 카운트업 표시
+      // 모터 멈춤
     }
 
   } else {
