@@ -29,10 +29,15 @@ bool signalActive = false;          // 신호등 활성화 상태
 unsigned long blueLEDStartTime = 0; // 파란색 LED 타이머 변수
 bool blueLEDState = false;          // 파란색 LED 상태
 unsigned long lastDisplayUpdate = 0; // 마지막 디스플레이 업데이트 시간
-const unsigned long displayUpdateInterval = 10; // 디스플레이 업데이트 간격 (0.0초)
+const unsigned long displayUpdateInterval = 100; // 디스플레이 업데이트 간격
 
-// 카운트다운 표시를 위한 상태 변수
-bool countdownActive = false;
+// 상태 변수
+unsigned long lastLEDChange = 0;  // 마지막 LED 상태 변경 시간
+unsigned long lastYellowBlink = 0; // 마지막 노란불 깜빡임 시간
+unsigned long lastRedBlink = 0;    // 마지막 빨간불 깜빡임 시간
+const unsigned long ledBlinkInterval = 500; // LED 깜빡임 간격
+const unsigned long yellowBlinkInterval = 600; // 노란불 깜빡임 간격
+const unsigned long redBlinkInterval = 500; // 빨간불 깜빡임 간격
 
 void setup() {
   pinMode(led1, OUTPUT);   // 빨간색 LED 핀 출력으로 설정
@@ -61,49 +66,71 @@ void loop() {
       signalActive = true;  // 신호등 활성화 상태로 변경
       signalStartTime = millis(); // 신호등 시작 시간 기록
       blueLEDStartTime = millis(); // 파란색 LED 시작 시간 초기화
-      countdownActive = true; // 카운트다운 활성화
     }
 
     // 신호등 상태 제어
     unsigned long currentTime = millis() - signalStartTime;
     int displayTime = 0; // 디스플레이에 표시할 시간 변수
 
-    if (currentTime < 3000) { // 0 ~ 3초: 초록불
+    if (currentTime < 20000) { // 0 ~ 20초: 초록불
       digitalWrite(greenLED, HIGH);
       digitalWrite(yellowLED, LOW);
       digitalWrite(redLED, LOW);
-      digitalWrite(led2, LOW); // 파란색 LED 끄기
       tone(buzzer, 1000); // 부저 작동
+      myStepper.step(stepsPerRevolution / 32); // 모터 정방향으로 작동
+      
+      // 빨간색 LED와 파란색 LED 교차 깜빡임
+      unsigned long currentMillis = millis();
+      if (currentMillis - lastLEDChange >= ledBlinkInterval) {
+        lastLEDChange = currentMillis;
+        digitalWrite(led1, !digitalRead(led1));
+        digitalWrite(led2, !digitalRead(led2));
+      }
+
       displayTime = (20000 - currentTime) / 1000; // 남은 시간 초 단위
-    } else if (currentTime < 7000) { // 3 ~ 7초: 노란불
+
+    } else if (currentTime < 30000) { // 20 ~ 30초: 노란불
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, HIGH);
       digitalWrite(redLED, LOW);
-      digitalWrite(led2, LOW); // 파란색 LED 끄기
-      tone(buzzer, 1000); // 부저 작동
+      noTone(buzzer); // 부저 끄기
+      // 빨간색 LED와 파란색 LED 교차 깜빡임
+      unsigned long currentMillis = millis();
+      if (currentMillis - lastLEDChange >= ledBlinkInterval) {
+        lastLEDChange = currentMillis;
+        digitalWrite(led1, !digitalRead(led1));
+        digitalWrite(led2, !digitalRead(led2));
+      }
+      myStepper.step(0); // 모터 정지
       displayTime = (30000 - currentTime) / 1000; // 남은 시간 초 단위
-    } else if (currentTime < 10000) { // 7 ~ 10초: 노란불 깜빡임
+
+    } else if (currentTime < 45000) { // 30 ~ 45초: 노란불 깜빡임
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, HIGH);
       digitalWrite(redLED, LOW);
-      digitalWrite(led2, LOW); // 파란색 LED 끄기
-      tone(buzzer, 1000); // 부저 작동
-      delay(300);
-      digitalWrite(yellowLED, LOW);
-      delay(300);
+      noTone(buzzer); // 부저 끄기
+      // 노란색 LED 깜빡임
+      unsigned long currentMillis = millis();
+      if (currentMillis - lastYellowBlink >= yellowBlinkInterval) {
+        lastYellowBlink = currentMillis;
+        digitalWrite(yellowLED, !digitalRead(yellowLED));
+      }
       displayTime = (45000 - currentTime) / 1000; // 남은 시간 초 단위
-    } else if (currentTime < 15000) { // 10 ~ 15초: 빨간불과 노란불 깜빡임
+
+    } else if (currentTime < 60000) { // 45 ~ 60초: 빨간불과 노란불 깜빡임
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, HIGH);
       digitalWrite(redLED, HIGH);
-      digitalWrite(led2, LOW); // 파란색 LED 끄기
-      tone(buzzer, 1000); // 부저 작동
-      delay(300);
-      digitalWrite(yellowLED, LOW);
-      digitalWrite(redLED, LOW);
-      delay(250);
+      noTone(buzzer); // 부저 끄기
+      // 빨간색 LED 빠르게 깜빡임
+      unsigned long currentMillis = millis();
+      if (currentMillis - lastRedBlink >= redBlinkInterval) {
+        lastRedBlink = currentMillis;
+        digitalWrite(redLED, !digitalRead(redLED));
+      }
       displayTime = (60000 - currentTime) / 1000; // 남은 시간 초 단위
-    } else { // 15초 이상: 빨간불과 파란색 LED 깜빡임
+
+    } else { // 60초 이상: 빨간불과 파란색 LED 깜빡임
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, LOW);
       digitalWrite(redLED, HIGH);
@@ -122,33 +149,10 @@ void loop() {
       displayTime = 0; // 디스플레이에 0 표시
     }
 
-    // 모터와 LED 작동 (부저가 작동하지 않을 때)
-    if (currentTime < 60000) {
-      // 신호등이 빨간불이 아닐 때만 LED를 깜빡임
-      digitalWrite(led1, HIGH); // 빨간색 LED 켜기
-      digitalWrite(led2, LOW);  // 파란색 LED 끄기
-      myStepper.step(stepsPerRevolution / 32); // 모터 일정 스텝 회전
-      delay(50);               // 50밀리초 대기
-
-      digitalWrite(led1, LOW);  // 빨간색 LED 끄기
-      digitalWrite(led2, HIGH); // 파란색 LED 켜기
-      
-      myStepper.step(stepsPerRevolution / 32); // 모터 일정 스텝 회전
-      delay(50);               // 50밀리초 대기
-    } else {
-      // 빨간불 상태에서 모든 LED 끄기
-      digitalWrite(led1, LOW);
-      digitalWrite(led2, LOW);
-    }
-
     // TM1637 디스플레이에 시간 표시 (업데이트 간격 고려)
     unsigned long currentMillis = millis();
     if (currentMillis - lastDisplayUpdate >= displayUpdateInterval) {
-      if (countdownActive) {
-        display.showNumberDec(displayTime, false); // 남은 시간 초 단위 표시
-      } else {
-        display.showNumberDec(0, false); // `00:00` 표시
-      }
+      display.showNumberDec(displayTime, false); // 남은 시간 초 단위 표시
       lastDisplayUpdate = currentMillis; // 마지막 업데이트 시간 기록
     }
 
@@ -157,7 +161,6 @@ void loop() {
     if (signalActive) {
       // 신호등 비활성화 상태로 변경
       signalActive = false;
-      countdownActive = false; // 카운트다운 비활성화
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, LOW);
       digitalWrite(redLED, LOW);
@@ -166,7 +169,8 @@ void loop() {
     // LED와 부저 상태 초기화
     digitalWrite(led1, LOW); // 빨간색 LED 끄기
     noTone(buzzer);          // 부저 끄기
-    // TM1637 디스플레이에 00:00 표시
+    // 모터를 멈추게 할 필요는 없습니다. 스텝을 명령하지 않으면 모터는 자동으로 멈춥니다.
+    // TM1637 디스플레이에 0000 표시
     display.showNumberDec(0, false);
   }
 }
