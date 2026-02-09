@@ -1,13 +1,22 @@
-int sensor = A0; // water sensor에 연결된 A0(아날로그)을 sensor 변수에 저장
-int led1 = 11;   // 첫 번째 LED 핀 번호
-int led2 = 10;   // 두 번째 LED 핀 번호
-int buzzer = 12; // 부저 핀 번호
-int threshold = 500; // 물 감지의 기준값 설정 (적절한 값으로 설정)
+#include <Stepper.h>
+
+const int stepsPerRevolution = 2048;  // 28BYJ-48 모터의 전체 스텝 수
+
+// 핀 번호 설정
+int sensor = A0;    // 물 감지 센서
+int led1 = 11;      // 첫 번째 LED 핀 번호
+int led2 = 10;      // 두 번째 LED 핀 번호
+int buzzer = 12;    // 부저 핀 번호
+int threshold = 500; // 물 감지 기준값
+
+// ULN2003 드라이버와 연결된 아두이노 핀 번호 설정 (4, 5, 6, 7 사용)
+Stepper myStepper(stepsPerRevolution, 4, 6, 5, 7);
 
 void setup() {
-  pinMode(led1, OUTPUT);   // 첫 번째 LED 핀을 출력으로 설정
-  pinMode(led2, OUTPUT);   // 두 번째 LED 핀을 출력으로 설정
-  pinMode(buzzer, OUTPUT); // 부저 핀을 출력으로 설정
+  pinMode(led1, OUTPUT);   // 첫 번째 LED 핀 출력으로 설정
+  pinMode(led2, OUTPUT);   // 두 번째 LED 핀 출력으로 설정
+  pinMode(buzzer, OUTPUT); // 부저 핀 출력으로 설정
+  myStepper.setSpeed(10);  // 모터 속도 설정 (RPM)
   Serial.begin(9600);      // 시리얼 모니터 시작 (디버깅용)
 }
 
@@ -18,26 +27,37 @@ void loop() {
   if (data > threshold) {
     // 부저 울리기
     tone(buzzer, 1000); // 부저에 1000Hz 소리 내기
-    // LED 교차 깜빡이기
+
+    // LED 교차 깜빡이기와 모터 회전
     for (int i = 0; i < 5; i++) { // 부저가 울리는 동안 LED를 5번 교차 깜빡이기
       digitalWrite(led1, HIGH); // 첫 번째 LED 켜기
       digitalWrite(led2, LOW);  // 두 번째 LED 끄기
+      myStepper.step(stepsPerRevolution / 2048); // 모터 한 스텝 회전
       delay(200);               // 200밀리초 대기
+
       digitalWrite(led1, LOW);  // 첫 번째 LED 끄기
       digitalWrite(led2, HIGH); // 두 번째 LED 켜기
+      myStepper.step(-stepsPerRevolution / 2048); // 모터 반대 방향으로 한 스텝 회전
       delay(200);               // 200밀리초 대기
     }
+
     // 부저 끄기
     noTone(buzzer); // 부저 소리 끄기
     // 모든 LED 끄기
     digitalWrite(led1, LOW);
     digitalWrite(led2, LOW);
     delay(1250);    // 1.25초 대기
+
+    // 모터를 더 회전시킬 수 있습니다. 예를 들어, 전체 회전 시키기:
+    myStepper.step(stepsPerRevolution);  // 시계방향으로 한 바퀴 회전
+    delay(1000);  // 1초 대기
+    myStepper.step(-stepsPerRevolution);  // 반시계방향으로 한 바퀴 회전
   } else {
-    // 물이 감지되지 않으면 LED와 부저 끄기
+    // 물이 감지되지 않으면 LED, 부저, 모터 끄기
     digitalWrite(led1, LOW);
     digitalWrite(led2, LOW);
     noTone(buzzer);
+    // 모터를 멈추게 할 필요는 없습니다. 스텝을 명령하지 않으면 모터는 자동으로 멈춥니다.
   }
 
   Serial.println(data); // 센서 값 출력 (디버깅용)
