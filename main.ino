@@ -29,7 +29,10 @@ bool signalActive = false;          // 신호등 활성화 상태
 unsigned long blueLEDStartTime = 0; // 파란색 LED 타이머 변수
 bool blueLEDState = false;          // 파란색 LED 상태
 unsigned long lastDisplayUpdate = 0; // 마지막 디스플레이 업데이트 시간
-const unsigned long displayUpdateInterval = 100; // 디스플레이 업데이트 간격
+const unsigned long displayUpdateInterval = 500; // 디스플레이 업데이트 간격 (0.5초)
+
+// 카운트다운 표시를 위한 상태 변수
+bool countdownActive = false;
 
 void setup() {
   pinMode(led1, OUTPUT);   // 빨간색 LED 핀 출력으로 설정
@@ -58,6 +61,7 @@ void loop() {
       signalActive = true;  // 신호등 활성화 상태로 변경
       signalStartTime = millis(); // 신호등 시작 시간 기록
       blueLEDStartTime = millis(); // 파란색 LED 시작 시간 초기화
+      countdownActive = true; // 카운트다운 활성화
     }
 
     // 신호등 상태 제어
@@ -140,7 +144,11 @@ void loop() {
     // TM1637 디스플레이에 시간 표시 (업데이트 간격 고려)
     unsigned long currentMillis = millis();
     if (currentMillis - lastDisplayUpdate >= displayUpdateInterval) {
-      display.showNumberDec(displayTime, false); // 남은 시간 초 단위 표시
+      if (countdownActive) {
+        display.showNumberDec(displayTime, false); // 남은 시간 초 단위 표시
+      } else {
+        display.showNumberDec(0, false); // `00:00` 표시
+      }
       lastDisplayUpdate = currentMillis; // 마지막 업데이트 시간 기록
     }
 
@@ -149,6 +157,7 @@ void loop() {
     if (signalActive) {
       // 신호등 비활성화 상태로 변경
       signalActive = false;
+      countdownActive = false; // 카운트다운 비활성화
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, LOW);
       digitalWrite(redLED, LOW);
@@ -157,8 +166,7 @@ void loop() {
     // LED와 부저 상태 초기화
     digitalWrite(led1, LOW); // 빨간색 LED 끄기
     noTone(buzzer);          // 부저 끄기
-    // 모터를 멈추게 할 필요는 없습니다. 스텝을 명령하지 않으면 모터는 자동으로 멈춥니다.
-    // TM1637 디스플레이에 0000 표시
+    // TM1637 디스플레이에 00:00 표시
     display.showNumberDec(0, false);
   }
 }
