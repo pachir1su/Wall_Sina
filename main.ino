@@ -30,6 +30,9 @@ unsigned long ledToggleTime = 0;    // LED 교차 깜빡임 타이머
 bool ledState = false;              // LED 상태 토글 변수
 int ledTogglePhase = 0;             // 신호등 3색 교차 깜빡임 상태
 
+bool isBuzzerOn = false;            // 부저가 켜져 있는지 여부를 추적하는 변수
+bool waterDetected = false;         // 물 감지 여부를 저장하는 변수
+
 void setup() {
   pinMode(led1, OUTPUT);   // 빨간색 LED 핀 출력으로 설정
   pinMode(led2, OUTPUT);   // 파란색 LED 핀 출력으로 설정
@@ -51,20 +54,27 @@ void loop() {
   int data = analogRead(sensor); // 센서 값 읽기
   unsigned long currentTime = millis();
 
-  if (data > threshold) {
-    // 물이 감지되었으므로 신호등과 모터 작동 시작
-    if (!signalActive) {
-      signalActive = true;  // 신호등 활성화 상태로 변경
-      signalStartTime = currentTime; // 신호등 시작 시간 기록
+  if (!waterDetected) {  // 물이 한 번도 감지되지 않은 경우
+    if (data > threshold) {
+      waterDetected = true;  // 물이 감지되면 상태를 변경
+      signalStartTime = millis();  // 물이 감지된 순간 타이머 시작
+      signalActive = true;
     }
+  }
 
+  if (waterDetected) {  // 물이 감지된 후 계속 작동
     unsigned long elapsedTime = currentTime - signalStartTime;
 
     if (elapsedTime < 27000) { // 초록불 상태 (0 ~ 27초)
       digitalWrite(greenLED, HIGH);
       digitalWrite(yellowLED, LOW);
       digitalWrite(redLED, LOW);
-      tone(buzzer, 1000); // 부저 작동
+
+      // 부저가 꺼져 있으면 켜기
+      if (!isBuzzerOn) {
+        tone(buzzer, 1000); // 부저 작동
+        isBuzzerOn = true;  // 부저가 켜졌음을 기록
+      }
       myStepper.step(stepsPerRevolution / 32); // 모터 정방향 회전
 
       if (currentTime - ledToggleTime >= 500) {
@@ -80,7 +90,12 @@ void loop() {
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, HIGH);
       digitalWrite(redLED, LOW);
-      tone(buzzer, 1000); // 부저 작동
+
+      // 부저가 꺼져 있으면 켜기
+      if (!isBuzzerOn) {
+        tone(buzzer, 1000); // 부저 작동
+        isBuzzerOn = true;
+      }
 
       if (currentTime - ledToggleTime >= 500) {
         ledState = !ledState;
@@ -94,7 +109,12 @@ void loop() {
     } else if (elapsedTime < 70000) { // 노란불 점멸 상태 (47 ~ 70초)
       digitalWrite(greenLED, LOW);
       digitalWrite(redLED, LOW);
-      noTone(buzzer); // 부저 끄기
+
+      // 부저가 켜져 있으면 끄기
+      if (isBuzzerOn) {
+        noTone(buzzer);  // 부저 끄기
+        isBuzzerOn = false;
+      }
 
       if (currentTime - ledToggleTime >= 600) {
         ledState = !ledState;
@@ -107,7 +127,12 @@ void loop() {
 
     } else if (elapsedTime < 90000) { // 빨간불과 노란불 점멸 상태 (70 ~ 90초)
       digitalWrite(greenLED, LOW);
-      noTone(buzzer); // 부저 끄기
+
+      // 부저가 켜져 있으면 끄기
+      if (isBuzzerOn) {
+        noTone(buzzer); // 부저 끄기
+        isBuzzerOn = false;
+      }
 
       if (currentTime - ledToggleTime >= 500) {
         ledState = !ledState;
@@ -124,7 +149,13 @@ void loop() {
       digitalWrite(greenLED, LOW);
       digitalWrite(yellowLED, LOW);
       digitalWrite(redLED, HIGH);
-      noTone(buzzer); // 부저 끄기
+
+      // 부저가 켜져 있으면 끄기
+      if (isBuzzerOn) {
+        noTone(buzzer); // 부저 끄기
+        isBuzzerOn = false;
+      }
+
       myStepper.step(-stepsPerRevolution / 32); // 모터 역방향 회전
 
       if (currentTime - ledToggleTime >= 500) {
@@ -137,7 +168,11 @@ void loop() {
       display.showNumberDec(elapsedTime / 1000, true); // 카운트업 표시
 
     } else { // 110초 이상 - 신호등 3개의 LED 교차 깜빡임, 모터 정지
-      noTone(buzzer); // 부저 끄기
+      // 부저가 켜져 있으면 끄기
+      if (isBuzzerOn) {
+        noTone(buzzer); // 부저 끄기
+        isBuzzerOn = false;
+      }
 
       if (currentTime - ledToggleTime >= 500) {
         ledTogglePhase = (ledTogglePhase + 1) % 3;
@@ -161,19 +196,6 @@ void loop() {
       digitalWrite(led2, LOW); // 파란색 LED 꺼짐
       display.showNumberDec(elapsedTime / 1000, true); // 카운트업 표시
       // 모터 멈춤
-    }
-
-  } else {
-    // 물이 감지되지 않으면 신호등과 모터 작동 중지
-    if (signalActive) {
-      signalActive = false; // 신호등 비활성화 상태로 변경
-      digitalWrite(greenLED, LOW);
-      digitalWrite(yellowLED, LOW);
-      digitalWrite(redLED, LOW);
-      digitalWrite(led1, LOW); // 빨간색 LED 끄기
-      digitalWrite(led2, LOW); // 파란색 LED 끄기
-      noTone(buzzer);
-      display.clear();
     }
   }
 
