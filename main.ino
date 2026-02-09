@@ -32,7 +32,6 @@ void loop() {
     for (int i = 0; i < 5; i++) { // 부저가 울리는 동안 LED를 5번 교차 깜빡이기
       digitalWrite(led1, HIGH); // 첫 번째 LED 켜기
       digitalWrite(led2, LOW);  // 두 번째 LED 끄기
-      myStepper.step(stepsPerRevolution / 2048); // 모터 한 스텝 회전
       myStepper.step(stepsPerRevolution);  // 시계방향으로 한 바퀴 회전
       delay(200);               // 200밀리초 대기
 
